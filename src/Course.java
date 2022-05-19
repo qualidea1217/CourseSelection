@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.Objects;
 
 public class Course {
-    private String courseCode;
-    private LocalTime startTime;
-    private LocalTime endTime;
-    private boolean[] days; // boolean array with size = 7, days[0] is Sunday and days[6] is Saturday
-    private List<Course> labs; // lab sections, with same course code but probably different days and time, can also be used for other different time
-    private int credit;
-    private String instructor;
-    private int stars; // self evaluation (like) about this course, 0-5
+    private final String courseCode;
+    private final LocalTime startTime;
+    private final LocalTime endTime;
+    private final boolean[] days; // boolean array with size = 7, days[0] is Sunday and days[6] is Saturday
+    private final List<Course> labs; // lab sections, with same course code but probably different days and time, can also be used for other different time
+    private final int credit;
+    private final String instructor;
+    private final int stars; // self evaluation (like) about this course, 0-5
 
     public Course(String courseCode, LocalTime startTime, LocalTime endTime, boolean[] days, List<Course> labs, int credit, String instructor, int stars) {
         this.courseCode = courseCode;
@@ -33,14 +33,20 @@ public class Course {
         this(courseCode, LocalTime.parse(startTime), LocalTime.parse(endTime), days, new ArrayList<>(), credit, instructor, stars);
     }
 
-    public void addLab(String startTime, String endTime, boolean[] days, String instructor) {
-        this.labs.add(new Course(this.courseCode, startTime, endTime, days, 0, instructor, this.stars));
+    public void addLab(String startTime, String endTime, boolean[] days, String instructor) throws Exception {
+        Course lab = new Course(this.courseCode, startTime, endTime, days, 0, instructor, this.stars);
+        if (this.isTimeAndDayConflict(lab)) {
+            throw new Exception("lab section is conflicted with main section");
+        } else {
+            this.labs.add(lab);
+        }
     }
 
-    public void addLab(String startTime, String endTime, boolean[] days) {
+    public void addLab(String startTime, String endTime, boolean[] days) throws Exception {
         addLab(startTime, endTime, days, this.instructor);
     }
 
+    // time will be considered as conflicted if start time and end time equals to each other
     private boolean isTimeConflict(Course other) {
         return !(this.startTime.isAfter(other.endTime) || this.endTime.isBefore(other.startTime));
     }
@@ -73,14 +79,29 @@ public class Course {
     }
 
     public boolean isConflict(Course other) {
-        if (isSameCourse(other) || isTimeAndDayConflict(other)) { // check the two course themselves are conflicted
+        if (this.isSameCourse(other)) {
             return true;
-        } else if (!this.labs.isEmpty() && other.labs.isEmpty()) { // check if this's lab section is conflicted with other itself
+        }
+        if (this.labs.isEmpty() && other.labs.isEmpty()) { // check the two course themselves are conflicted
             return this.isTimeAndDayConflict(other);
-        } else if (!other.labs.isEmpty() && this.labs.isEmpty()) { // check if other's lab section is conflicted with this itself
-            return other.isLabsConflictWithOther(this);
+        } else if (!this.labs.isEmpty() && other.labs.isEmpty()) {
+            if (this.isTimeAndDayConflict(other)) {
+                return true;
+            } else {
+                return this.isLabsConflictWithOther(other);
+            }
+        } else if (this.labs.isEmpty() && !other.labs.isEmpty()) {
+            if (this.isTimeAndDayConflict(other)) {
+                return true;
+            } else {
+                return other.isLabsConflictWithOther(this);
+            }
         } else {
-            if (this.isTimeAndDayConflict(other) || other.isLabsConflictWithOther(this)) {
+            if (this.isTimeAndDayConflict(other)) {
+                return true;
+            } else if (this.isLabsConflictWithOther(other)) {
+                return true;
+            } else if (other.isLabsConflictWithOther(this)) {
                 return true;
             } else {
                 for (Course c1: this.labs) {
@@ -93,6 +114,7 @@ public class Course {
                 return false;
             }
         }
+
     }
 
     @Override
@@ -112,22 +134,45 @@ public class Course {
         return result;
     }
 
+    private String getDaysString() {
+        String[] daysConverter = {"Su", "M", "T", "W", "Th", "F", "Sa"};
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < this.days.length; i++) {
+            if (this.days[i]) {
+                builder.append(daysConverter[i]);
+            }
+        }
+        return builder.toString();
+    }
+
     @Override
     public String toString() {
-//        return "Course{" +
-//                "courseCode='" + courseCode + '\'' +
-//                ", startTime=" + startTime +
-//                ", endTime=" + endTime +
-//                ", days=" + Arrays.toString(days) +
-//                ", labs=" + labs +
-//                ", credit=" + credit +
-//                ", instructor='" + instructor + '\'' +
-//                ", stars=" + stars +
-//                '}';
-        return this.courseCode;
+        StringBuilder output = new StringBuilder("Course Code='" + courseCode + '\'' +
+                ", start time=" + startTime +
+                ", end time=" + endTime +
+                ", days=" + getDaysString() +
+                ", credit=" + credit +
+                ", instructor='" + instructor + '\'' +
+                ", stars=" + stars + "\n");
+        if (!this.labs.isEmpty()) {
+            for (Course c: this.labs) {
+                output.append("labs for ").append(courseCode).append(": ").append("start time=").append(startTime).
+                        append(", end time=").append(endTime).append(", days=").append(getDaysString()).
+                        append(", instructor='").append(instructor).append("\n");
+            }
+        }
+        return output.toString();
     }
 
     public String getCourseCode() {
         return courseCode;
+    }
+
+    public int getCredit() {
+        return credit;
+    }
+
+    public int getStars() {
+        return stars;
     }
 }

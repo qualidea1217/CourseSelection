@@ -1,14 +1,14 @@
 import java.util.*;
 
 public class Courses {
-    private List<Course> courseList;
+    private final List<Course> courseList;
 
     public Courses() {
         this.courseList = new ArrayList<>();
     }
 
     public Courses(Course... courses) {
-        this.courseList = List.of(courses);
+        this.courseList = new ArrayList<>(List.of(courses));
     }
 
     public Courses(ArrayList<Course> courses) {
@@ -19,10 +19,6 @@ public class Courses {
         this.courseList.add(course);
     }
 
-    public void removeCourse(Course course) {
-        this.courseList.remove(course);
-    }
-
     public ArrayList<ArrayList<Course>> getAllCombinations(int size) {
         ArrayList<ArrayList<Course>> combinations = new ArrayList<>();
         ArrayDeque<Course> combination = new ArrayDeque<>();
@@ -31,6 +27,7 @@ public class Courses {
         return combinations;
     }
 
+    // recursive DFS implementation
     private void getAllCombinationsAux(int size, int index, ArrayList<ArrayList<Course>> combinations, ArrayDeque<Course> combination) {
         if (combination.size() == size) {
             combinations.add(new ArrayList<>(combination));
@@ -52,5 +49,24 @@ public class Courses {
             }
         }
         return false;
+    }
+
+    public void printCombination(int size) {
+        ArrayList<ArrayList<Course>> combinations = getAllCombinations(size);
+        int count = 0;
+        int totalCredit;
+        int totalStars;
+        for (var a: combinations) {
+            totalCredit = 0;
+            totalStars = 0;
+            System.out.println("the " + ++count + " combination");
+            for (var b: a) {
+                totalCredit += b.getCredit();
+                totalStars += b.getStars();
+                System.out.print(b);
+            }
+            System.out.println("\ttotal credit: " + totalCredit + ", total stars: " + totalStars);
+            System.out.println();
+        }
     }
 }
